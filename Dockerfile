@@ -1,28 +1,20 @@
-FROM quay.io/keycloak/keycloak:21.1.1 as builder
+FROM quay.io/keycloak/keycloak:12.0.1
 
-ENV KC_HEALTH_ENABLED=true
-ENV KC_METRICS_ENABLED=true
+# Copia temas personalizados, se necessário
+COPY themes /opt/jboss/keycloak/themes
 
+# Copia o certificado para dentro do container
+COPY DigiCertGlobalRootG2.crt.pem /usr/local/share/ca-certificates/
 
-# Configurar diretório para persistência do H2
-RUN mkdir -p /opt/keycloak/data/h2
+# Configura variáveis de ambiente para o PostgreSQL
+ENV PROXY_ADDRESS_FORWARDING=true \
+    KC_PROXY=passthrough \
+    JAVA_OPTS="-Xms512m -Xmx1024m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=512m"
 
-# Configuração para usar um volume montado no caminho /opt/keycloak/data/h2
-VOLUME ["/opt/keycloak/data/h2"]
-
-ENV KC_PROXY=edge
-ENV KC_HOSTNAME_STRICT=false
-ENV KC_HOSTNAME_STRICT_HTTPS=false
-ENV KC_HTTP_ENABLED=true
-ENV KC_HTTP_PORT=8080
-ENV KC_HEALTH_ENABLED=true
-ENV KC_METRICS_ENABLED=true
-ENV KEYCLOAK_ADMIN=admin
-ENV KEYCLOAK_ADMIN_PASSWORD=g7#Pq!xZ8T*B
-ENV WEBSITES_ENABLE_APP_SERVICE_STORAGE=true
-
-
+# Exponha a porta padrão do Keycloak
 EXPOSE 8080
 
-# Tornar o ponto de entrada flexível para que possamos especificar como rodar o Keycloak
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start --optimized --hostname-strict false --http-enabled true --hostname-strict-https false"]
+# Define o ponto de entrada padrão
+ENTRYPOINT ["/opt/jboss/tools/docker-entrypoint.sh"]
+
+CMD ["-b", "0.0.0.0"]
